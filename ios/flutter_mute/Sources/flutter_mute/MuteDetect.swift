@@ -15,7 +15,11 @@ public class MuteDetect: NSObject {
     private var soundID: SystemSoundID = 0
 
     private static var muteSoundUrl: URL {
+        #if SWIFT_PACKAGE
+        return Bundle.module.url(forResource: "mute", withExtension: "aiff")!
+        #else
         return Bundle(for: MuteDetect.self).url(forResource: "mute", withExtension: "aiff")!
+        #endif
     }
 
     private override init() {

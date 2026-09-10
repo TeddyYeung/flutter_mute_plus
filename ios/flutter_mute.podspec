@@ -11,8 +11,8 @@ Pod::Spec.new do |s|
   s.author           = { 'Aleksei Sturov' => 'alezhk@gmail.com' }
   s.source           = { :git => 'https://github.com/Alezhka/flutter_mute.git' }
   
-  s.source_files = 'Classes/**/*'
-  s.resources = 'Assets/*.aiff'
+  s.source_files = 'flutter_mute/Sources/flutter_mute/**/*.{h,m,swift}'
+  s.resources = 'flutter_mute/Sources/flutter_mute/Resources/*.aiff'
   s.dependency 'Flutter'
   s.platform = :ios, '10.0'
 
