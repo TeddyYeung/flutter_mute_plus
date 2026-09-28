@@ -1,129 +1,77 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_mute/flutter_mute.dart';
+import 'package:flutter_mute_plus/flutter_mute_plus.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
   @override
-  _MyAppState createState() => _MyAppState();
+  State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
-
-  RingerMode? _mode;
-  String? _permissionStatus;
+  String _status = 'Unknown';
 
   @override
   void initState() {
     super.initState();
-    getRingerMode();
-    getAccessStatus();
+    _refresh();
   }
 
-  Future<void> getRingerMode() async {
-    RingerMode? mode;
+  Future<void> _refresh() async {
+    String status;
     try {
-      mode = await FlutterMute.getRingerMode();
-    } catch (err) {
+      final mode = await FlutterMute.getRingerMode();
+      final isGranted = await FlutterMute.isNotificationPolicyAccessGranted;
+      status = '${mode.name} (policy access: $isGranted)';
+    } on PlatformException catch (e) {
+      status = 'Failed: ${e.message}';
     }
 
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
     if (!mounted) return;
-
-    setState(() {
-      _mode = mode;
-    });
+    setState(() => _status = status);
   }
 
-  Future<void> getAccessStatus() async {
-    bool isAccessGranted = false;
-    try {
-      isAccessGranted = await FlutterMute.isNotificationPolicyAccessGranted;
-      print(isAccessGranted);
-    } catch (err) {
-      print(err);
+  Future<void> _setMode(RingerMode mode) async {
+    if (!await FlutterMute.isNotificationPolicyAccessGranted) {
+      await FlutterMute.openNotificationPolicySettings();
+      return;
     }
-
-    setState(() {
-      _permissionStatus = isAccessGranted ? "Access granted" : "Access not granted";
-    });
+    try {
+      await FlutterMute.setRingerMode(mode);
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      setState(() => _status = 'Failed: ${e.message}');
+      return;
+    }
+    await _refresh();
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Flutter mute'),
-        ),
+        appBar: AppBar(title: const Text('flutter_mute_plus example')),
         body: Center(
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Text('Running on: $_mode\n $_permissionStatus'),
-              ElevatedButton(
-                onPressed: getRingerMode,
-                child: Text('Get ringer mode'),
-              ),
-              ElevatedButton(
-                onPressed: getAccessStatus,
-                child: Text('Get access status'),
-              ),
-              ElevatedButton(
-                onPressed: setNormalMode,
-                child: Text('Set Normal mode'),
-              ),
-              ElevatedButton(
-                onPressed: setSilentMode,
-                child: Text('Set Silent mode'),
-              ),
-              ElevatedButton(
-                onPressed: setVibrateMode,
-                child: Text('Set Vibrate mode'),
-              ),
-              ElevatedButton(
-                onPressed: openNotificationPolicySettings,
-                child: Text('Open Policy Access Settings'),
-              ),
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Ringer mode: $_status'),
+              const SizedBox(height: 16),
+              ElevatedButton(onPressed: _refresh, child: const Text('Refresh')),
+              for (final mode in RingerMode.values)
+                TextButton(
+                  onPressed: () => _setMode(mode),
+                  child: Text('Set ${mode.name} (Android only)'),
+                ),
             ],
           ),
         ),
       ),
     );
-  }
-
-  Future<void> setSilentMode() async {
-    try {
-      await FlutterMute.setRingerMode(RingerMode.Silent);
-    } on PlatformException {
-      print('Access is not granted!');
-    }
-  }
-
-  Future<void> setNormalMode() async {
-    try {
-      await FlutterMute.setRingerMode(RingerMode.Normal);
-    } on PlatformException {
-      print('Access is not granted!');
-    }
-  }
-
-  Future<void> setVibrateMode() async {
-    try {
-      await FlutterMute.setRingerMode(RingerMode.Vibrate);
-    } on PlatformException {
-      print('Access is not granted!');
-    }
-  }
-
-  Future<void> openNotificationPolicySettings() async {
-    await FlutterMute.openNotificationPolicySettings();
   }
 }

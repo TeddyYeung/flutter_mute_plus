@@ -1,9 +1,19 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility that Flutter provides. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_mute_plus/flutter_mute_plus.dart';
+
+import 'package:flutter_mute_plus_example/main.dart';
 
 void main() {
+  testWidgets('shows the ringer mode reported by the plugin', (WidgetTester tester) async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      FlutterMute.channel,
+      (MethodCall call) async => call.method == 'getRingerMode' ? RingerMode.Vibrate.index : true,
+    );
+
+    await tester.pumpWidget(const MyApp());
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Ringer mode: Vibrate'), findsOneWidget);
+  });
 }
