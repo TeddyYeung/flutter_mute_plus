@@ -1,22 +1,72 @@
 # flutter_mute_plus
 
+[![pub package](https://img.shields.io/pub/v/flutter_mute_plus.svg)](https://pub.dev/packages/flutter_mute_plus)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+
 A Flutter plugin to check or toggle the device ringer mode.
 
-A maintained fork of [flutter_mute](https://github.com/Alezhka/flutter_mute) by Aleksei Sturov, updated for current Android, Xcode and Flutter toolchains.
+A maintained fork of [flutter_mute](https://github.com/Alezhka/flutter_mute) by Aleksei Sturov. The Dart API is the same, so switching takes one import change, and the plugin builds with current Android Gradle Plugin, Xcode and Flutter versions.
 
-## Why this fork
+## Why switch from flutter_mute
 
-`flutter_mute` was last published to pub.dev as 0.0.4 in December 2021, and its repository has had no commits since then. Meanwhile the toolchain moved on, and the plugin now breaks or warns in ordinary projects:
+`flutter_mute` 0.0.4, published in December 2021, is its last release, and its repository has had no commits since. The maintainer has not responded to any issue or pull request opened after 2021. With current toolchains the package now:
 
-| Problem | Upstream report | Upstream status |
+- **fails to build on Android** with Android Gradle Plugin 8 and later,
+- **fails to compile on iOS** with Xcode 16 and later,
+- **triggers a Flutter warning** for missing Swift Package Manager support, which Flutter says will become an error.
+
+Several people submitted fixes as pull requests, but none were merged. `flutter_mute_plus` merges those fixes, adds the ones that were still missing, and publishes the result as a versioned package on pub.dev.
+
+## What flutter_mute_plus adds
+
+| | flutter_mute 0.0.4 | flutter_mute_plus 1.0.0 |
+|---|:---:|:---:|
+| Android Gradle Plugin 8 / 9 | ❌ build fails | ✅ |
+| Xcode 16+ | ❌ compile error | ✅ |
+| Swift Package Manager | ❌ | ✅ (CocoaPods still supported) |
+| iOS privacy manifest | ❌ | ✅ |
+| `openNotificationPolicySettings()` completes | ❌ never returns | ✅ |
+| Can be installed next to `flutter_mute` | — | ✅ separate channel and class names |
+| Unit and integration tests | ❌ | ✅ |
+| Dart API | `FlutterMute`, `RingerMode` | unchanged |
+
+## What was fixed, and how it was verified
+
+Every open problem in the upstream repository is fixed here. Each fix was checked with Flutter 3.44.9 and Xcode 27.2.
+
+| Fix | Upstream | Verified |
 |---|---|---|
-| Android Gradle Plugin 8 requires `namespace`; the build fails | [Issue #3](https://github.com/Alezhka/flutter_mute/issues/3), [PR #7](https://github.com/Alezhka/flutter_mute/pull/7) | Issue open since Nov 2024; PR closed by its author after going unreviewed |
-| Xcode 16: `Cannot find 'TARGET_OS_SIMULATOR' in scope` | [Issue #4](https://github.com/Alezhka/flutter_mute/issues/4), [PR #6](https://github.com/Alezhka/flutter_mute/pull/6) | Open since Apr 2025 |
-| Flutter warns that the plugin lacks Swift Package Manager support, and says this will become an error | [Issue #8](https://github.com/Alezhka/flutter_mute/issues/8), [PR #9](https://github.com/Alezhka/flutter_mute/pull/9) | Open since May 2026 |
+| **Android builds on AGP 8 and 9.** The build script moves to Kotlin DSL with `namespace`, Java/Kotlin 17 and compileSdk 36. Upstream PR #7 only added `namespace` and kept the AGP 3.5 / Gradle 5.6 scripts. | [#3](https://github.com/Alezhka/flutter_mute/issues/3), [PR #7](https://github.com/Alezhka/flutter_mute/pull/7) | ✅ Example APK builds on AGP 8.9.1 (Gradle 8.11.1) and AGP 9.0.1 (Gradle 9.1) |
+| **iOS compiles on Xcode 16+.** `TARGET_OS_SIMULATOR` is replaced with `#if targetEnvironment(simulator)`. | [#4](https://github.com/Alezhka/flutter_mute/issues/4), [PR #6](https://github.com/Alezhka/flutter_mute/pull/6) | ✅ iOS simulator build succeeds; `getRingerMode()` returns on the simulator (integration test) |
+| **Swift Package Manager support.** Adds `Package.swift` and loads resources via `Bundle.module`. | [#8](https://github.com/Alezhka/flutter_mute/issues/8), [PR #9](https://github.com/Alezhka/flutter_mute/pull/9) | ✅ SPM build succeeds; integration test passes on an iOS 18 simulator |
+| **SPM compile error in PR #9.** `Cannot find 'CACurrentMediaTime' in scope` under SPM, because `QuartzCore` was not imported. | Found in this fork | ✅ SPM build succeeds |
+| **CocoaPods still works.** The `.podspec` is kept next to `Package.swift`. | — | ✅ CocoaPods build succeeds; `mute.aiff` bundled |
+| **`openNotificationPolicySettings()` completes.** The Android side never sent a result, so `await` never returned. | Found in this fork | ✅ Dart unit test |
+| **Installs next to `flutter_mute`.** The method channel, Android package and iOS classes are renamed. | — | ✅ Dart unit test |
+| **Correct README examples.** Upstream showed `getRingerMode` as a getter and a `setSoundMode()` method, which does not exist. | Found in this fork | ✅ Examples match the API |
 
-Fixes for all of these were submitted as pull requests, but the maintainer has not replied to any issue or pull request since 2021. Apps can work around it by pointing at a git fork, but that pins every app to an unversioned commit. `flutter_mute_plus` collects those fixes into a versioned package on pub.dev.
+`flutter analyze` reports no issues, and Dart unit tests cover every method channel call on Android and iOS.
 
-If upstream becomes active again, these changes can be contributed back.
+**Not verified yet:** mute switch detection on a physical iPhone. The simulator skips that code path. The detection logic itself is unchanged from `flutter_mute`. Please [open an issue](https://github.com/TeddyYeung/flutter_mute_plus/issues) if its behavior differs.
+
+## Migrating from flutter_mute
+
+The Dart API is unchanged. Replace the dependency and the import:
+
+```diff
+ dependencies:
+-  flutter_mute: ^0.0.4
++  flutter_mute_plus: ^1.0.0
+```
+
+```diff
+-import 'package:flutter_mute/flutter_mute.dart';
++import 'package:flutter_mute_plus/flutter_mute_plus.dart';
+```
+
+If you depended on a git fork of `flutter_mute` to work around the issues above, you can remove it.
+
+Minimum versions: Dart 3, iOS 13.0, Android minSdk 21.
 
 ## Features
 
@@ -29,13 +79,6 @@ If upstream becomes active again, these changes can be contributed back.
 | `RingerMode.Normal` | Normal mode |
 | `RingerMode.Silent` | Silent mode (Android only) |
 | `RingerMode.Vibrate` | Vibrate mode. On iOS, returned when the mute switch is on |
-
-## Installation
-
-```yaml
-dependencies:
-  flutter_mute_plus: ^1.0.0
-```
 
 ## Usage
 
@@ -62,27 +105,11 @@ if (!await FlutterMute.isNotificationPolicyAccessGranted) {
 }
 ```
 
-## Migrating from flutter_mute
-
-The Dart API is unchanged. Replace the dependency and the import:
-
-```diff
- dependencies:
--  flutter_mute: ^0.0.4
-+  flutter_mute_plus: ^1.0.0
-```
-
-```diff
--import 'package:flutter_mute/flutter_mute.dart';
-+import 'package:flutter_mute_plus/flutter_mute_plus.dart';
-```
-
-Requirements changed: Dart 3, iOS 13.0+, Android minSdk 21.
-
 ## Platform notes
 
 - **iOS** has no public API for the ringer mode. The plugin plays a short silent sound and measures how long playback takes: if it finishes almost instantly, the mute switch is on. It therefore returns only `Normal` or `Vibrate`.
 - **iOS Simulator** always returns `Normal`.
+- **Xcode 27** requires a minimum iOS deployment target of 15.0. If your app still targets 13.0 or 14.0, raise it in your Podfile and Xcode project. This affects every Flutter plugin, not only this one.
 
 ## License
 
