@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mute_plus/flutter_mute_plus.dart';
@@ -15,11 +17,25 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _status = 'Unknown';
+  final List<String> _changes = [];
+  late final StreamSubscription<RingerMode> _changesSubscription;
 
   @override
   void initState() {
     super.initState();
     _refresh();
+    _changesSubscription = FlutterMute.onRingerModeChanged.listen(_onRingerModeChanged);
+  }
+
+  @override
+  void dispose() {
+    _changesSubscription.cancel();
+    super.dispose();
+  }
+
+  void _onRingerModeChanged(RingerMode mode) {
+    final time = DateTime.now().toIso8601String().substring(11, 19);
+    setState(() => _changes.insert(0, '$time  ${mode.name}'));
   }
 
   Future<void> _refresh() async {
@@ -68,6 +84,9 @@ class _MyAppState extends State<MyApp> {
                   onPressed: () => _setMode(mode),
                   child: Text('Set ${mode.name} (Android only)'),
                 ),
+              const SizedBox(height: 16),
+              const Text('onRingerModeChanged'),
+              for (final change in _changes.take(5)) Text(change),
             ],
           ),
         ),

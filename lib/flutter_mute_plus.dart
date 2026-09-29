@@ -18,6 +18,13 @@ class FlutterMute {
   @visibleForTesting
   static const MethodChannel channel = MethodChannel('flutter_mute_plus');
 
+  @visibleForTesting
+  static const EventChannel ringerModeChangesChannel = EventChannel('flutter_mute_plus/ringer_mode_changes');
+
+  // Shared so every listener rides one native subscription; an EventChannel supports a single native sink.
+  static final Stream<RingerMode> _onRingerModeChanged =
+      ringerModeChangesChannel.receiveBroadcastStream().map((raw) => RingerMode.values[raw as int]);
+
   static bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;
 
   /// Gets the current device ringer mode.
@@ -29,6 +36,15 @@ class FlutterMute {
     final raw = await channel.invokeMethod<int>('getRingerMode');
     return RingerMode.values[raw!];
   }
+
+  /// Emits the new ringer mode whenever it changes.
+  ///
+  /// Does not emit the current mode on listen; call [getRingerMode] for that.
+  ///
+  /// On Android changes are pushed by the system. iOS has no change
+  /// notification, so the mute switch is checked once per second while the
+  /// app is in the foreground. The iOS simulator never emits.
+  static Stream<RingerMode> get onRingerModeChanged => _onRingerModeChanged;
 
   /// Sets the device sound mode. (Only for android)
   ///

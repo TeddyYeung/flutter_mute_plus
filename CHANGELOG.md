@@ -1,3 +1,8 @@
+## 1.1.0
+
+* Add `FlutterMute.onRingerModeChanged`, a stream that emits the new `RingerMode` whenever it changes. Android listens for `RINGER_MODE_CHANGED_ACTION`; iOS checks the mute switch once per second while the app is in the foreground.
+* Raise the example app's iOS deployment target to 15.0, the minimum Xcode 27 supports. The plugin itself still supports iOS 13.0.
+
 ## 1.0.0
 
 First release of `flutter_mute_plus`, forked from [flutter_mute](https://github.com/Alezhka/flutter_mute) 0.0.4.

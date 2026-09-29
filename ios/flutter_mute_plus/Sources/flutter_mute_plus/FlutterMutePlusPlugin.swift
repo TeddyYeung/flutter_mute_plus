@@ -13,6 +13,12 @@ public class FlutterMutePlusPlugin: NSObject, FlutterPlugin {
     let channel = FlutterMethodChannel(name: "flutter_mute_plus", binaryMessenger: registrar.messenger())
     let instance = FlutterMutePlusPlugin()
     registrar.addMethodCallDelegate(instance, channel: channel)
+
+    let ringerModeChangesChannel = FlutterEventChannel(
+      name: "flutter_mute_plus/ringer_mode_changes",
+      binaryMessenger: registrar.messenger()
+    )
+    ringerModeChangesChannel.setStreamHandler(RingerModeStreamHandler())
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {

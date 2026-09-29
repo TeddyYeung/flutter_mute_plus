@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'flutter_mute_plus'
-  s.version          = '1.0.0'
+  s.version          = '1.1.0'
   s.summary          = 'Check or toggle the device ringer mode.'
   s.description      = <<-DESC
 Check or toggle the device ringer mode. Maintained fork of flutter_mute.

@@ -56,7 +56,7 @@ The Dart API is unchanged. Replace the dependency and the import:
 ```diff
  dependencies:
 -  flutter_mute: ^0.0.4
-+  flutter_mute_plus: ^1.0.0
++  flutter_mute_plus: ^1.1.0
 ```
 
 ```diff
@@ -71,8 +71,9 @@ Minimum versions: Dart 3, iOS 13.0, Android minSdk 21.
 ## Features
 
 1. Detect the device's current ringer mode.
-2. Switch between Normal, Silent and Vibrate (Android only).
-3. Check and request notification policy access, which Android 7.0 (API 24) and above require before the ringer mode can change.
+2. Listen for ringer mode changes.
+3. Switch between Normal, Silent and Vibrate (Android only).
+4. Check and request notification policy access, which Android 7.0 (API 24) and above require before the ringer mode can change.
 
 | Mode | Description |
 |---|---|
@@ -88,6 +89,17 @@ Get the current ringer mode:
 import 'package:flutter_mute_plus/flutter_mute_plus.dart';
 
 final RingerMode mode = await FlutterMute.getRingerMode();
+```
+
+Listen for changes. The stream emits only when the mode changes, so call `getRingerMode()` for the starting value:
+
+```dart
+final subscription = FlutterMute.onRingerModeChanged.listen((RingerMode mode) {
+  print('Ringer mode changed to $mode');
+});
+
+// Cancel when you no longer need updates.
+await subscription.cancel();
 ```
 
 Change the ringer mode (Android only; does nothing on iOS):
@@ -108,7 +120,8 @@ if (!await FlutterMute.isNotificationPolicyAccessGranted) {
 ## Platform notes
 
 - **iOS** has no public API for the ringer mode. The plugin plays a short silent sound and measures how long playback takes: if it finishes almost instantly, the mute switch is on. It therefore returns only `Normal` or `Vibrate`.
-- **iOS Simulator** always returns `Normal`.
+- **`onRingerModeChanged` on iOS** checks the mute switch once per second while the app is in the foreground, because iOS sends no notification when the switch changes. Checks stop while the app is inactive or in the background, and resume when it returns. A change made in the meantime, for example from Control Center, is reported on return. On Android the system pushes each change, so there is no polling.
+- **iOS Simulator** always returns `Normal`, and `onRingerModeChanged` never emits.
 - **Xcode 27** requires a minimum iOS deployment target of 15.0. If your app still targets 13.0 or 14.0, raise it in your Podfile and Xcode project. This affects every Flutter plugin, not only this one.
 
 ## License

@@ -11,6 +11,7 @@ import io.github.teddyyeung.flutter_mute_plus.domain.IntentManagerService
 import io.github.teddyyeung.flutter_mute_plus.entities.RingerMode
 import io.github.teddyyeung.flutter_mute_plus.utils.ErrorUtil
 import io.flutter.embedding.engine.plugins.FlutterPlugin
+import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
@@ -23,6 +24,8 @@ class FlutterMutePlusPlugin: FlutterPlugin, MethodCallHandler {
   /// This local reference serves to register the plugin with the Flutter Engine and unregister it
   /// when the Flutter Engine is detached from the Activity
   private lateinit var channel : MethodChannel
+  private lateinit var ringerModeChangesChannel : EventChannel
+  private var ringerModeStreamHandler: RingerModeStreamHandler? = null
   private var context: Context? = null
   private var audioManagerService: AudioManagerService? = null
   private var intentManagerService: IntentManagerService? = null
@@ -33,7 +36,8 @@ class FlutterMutePlusPlugin: FlutterPlugin, MethodCallHandler {
   override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     val context = flutterPluginBinding.applicationContext
     val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    audioManagerService = AudioManagerServiceImpl(audioManager)
+    val audioManagerService = AudioManagerServiceImpl(audioManager)
+    this.audioManagerService = audioManagerService
 
     val notificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
     intentManagerService = IntentManagerServiceImpl(notificationManager)
@@ -42,6 +46,11 @@ class FlutterMutePlusPlugin: FlutterPlugin, MethodCallHandler {
 
     channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_mute_plus")
     channel.setMethodCallHandler(this)
+
+    ringerModeChangesChannel = EventChannel(flutterPluginBinding.binaryMessenger, "flutter_mute_plus/ringer_mode_changes")
+    val ringerModeStreamHandler = RingerModeStreamHandler(context, audioManagerService)
+    this.ringerModeStreamHandler = ringerModeStreamHandler
+    ringerModeChangesChannel.setStreamHandler(ringerModeStreamHandler)
   }
 
   override fun onMethodCall(call: MethodCall, result: Result) {
@@ -67,6 +76,10 @@ class FlutterMutePlusPlugin: FlutterPlugin, MethodCallHandler {
 
   override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
     channel.setMethodCallHandler(null)
+    ringerModeChangesChannel.setStreamHandler(null)
+    // setStreamHandler(null) does not call onCancel, so an active receiver would leak.
+    ringerModeStreamHandler?.onCancel(null)
+    ringerModeStreamHandler = null
     audioManagerService = null
     intentManagerService = null
     context = null

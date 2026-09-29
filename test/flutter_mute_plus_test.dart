@@ -37,6 +37,28 @@ void main() {
     }
   });
 
+  test('onRingerModeChanged maps native events to RingerMode', () async {
+    expect(FlutterMute.ringerModeChangesChannel.name, 'flutter_mute_plus/ringer_mode_changes');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockStreamHandler(
+      FlutterMute.ringerModeChangesChannel,
+      MockStreamHandler.inline(
+        onListen: (_, events) {
+          events.success(RingerMode.Vibrate.index);
+          events.success(RingerMode.Normal.index);
+          events.endOfStream();
+        },
+      ),
+    );
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockStreamHandler(
+        FlutterMute.ringerModeChangesChannel,
+        null,
+      ),
+    );
+
+    expect(await FlutterMute.onRingerModeChanged.toList(), [RingerMode.Vibrate, RingerMode.Normal]);
+  });
+
   group('on Android', () {
     setUp(() => debugDefaultTargetPlatformOverride = TargetPlatform.android);
 
