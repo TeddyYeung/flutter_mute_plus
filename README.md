@@ -19,7 +19,7 @@ Several people submitted fixes as pull requests, but none were merged. `flutter_
 
 ## What flutter_mute_plus adds
 
-| | flutter_mute 0.0.4 | flutter_mute_plus 1.0.0 |
+| | flutter_mute 0.0.4 | flutter_mute_plus 1.1.0 |
 |---|:---:|:---:|
 | Android Gradle Plugin 8 / 9 | ❌ build fails | ✅ |
 | Xcode 16+ | ❌ compile error | ✅ |
